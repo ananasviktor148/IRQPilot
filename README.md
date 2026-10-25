@@ -129,6 +129,10 @@ Run `src\CorePilot\bin\Debug\net8.0-windows\IRQPilot.exe` **as Administrator**
   the registry policy path above is the correct mechanism for interrupt latency work.
 - Devices whose written setting hasn't been activated yet show **Pending restart**.
 
+## License
+
+IRQPilot is available under the [MIT License](LICENSE).
+
 ## Sources (verified during implementation)
 
 - Interrupt Affinity (registry values, KAFFINITY):
