@@ -1,0 +1,143 @@
+<Window x:Class="CorePilot.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:CorePilot.Views"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="IRQPilot" Icon="Assets/IRQPilot.ico"
+        Width="1440" Height="900" MinWidth="1100" MinHeight="700"
+        Background="{StaticResource Bg}"
+        FontFamily="{StaticResource UiFont}"
+        Foreground="{StaticResource TextBrush}">
+  <shell:WindowChrome.WindowChrome>
+    <!-- No caption area: icon/title text and DWM buttons are gone.
+         Resize, snap and maximize still work; the header is the drag region
+         and we draw our own min/max/close buttons. -->
+    <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="8"
+                        GlassFrameThickness="0" CornerRadius="0"/>
+  </shell:WindowChrome.WindowChrome>
+  <Grid x:Name="RootGrid">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- Header (doubles as the drag region) -->
+    <Border x:Name="HeaderBar" Background="{StaticResource Bg}"
+            BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
+            Padding="24,12,150,12" MouseLeftButtonDown="HeaderBar_MouseLeftButtonDown">
+      <Grid Height="40">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="42"/>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Border Width="32" Height="32" CornerRadius="5" Background="{StaticResource AccentDim}"
+                BorderBrush="{StaticResource Accent}" BorderThickness="1"
+                HorizontalAlignment="Left" VerticalAlignment="Center">
+          <TextBlock Text="IP" FontWeight="Bold" FontSize="13" Foreground="{StaticResource Accent}"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+        <Grid Grid.Column="1" VerticalAlignment="Center">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <TextBlock Text="IRQPILOT" FontSize="20" FontWeight="Bold" LineHeight="24"
+                     Foreground="{StaticResource TextBrush}"/>
+          <TextBlock Grid.Row="1" Text="INTERRUPT AFFINITY CONTROL" FontSize="10" LineHeight="12"
+                     Foreground="{StaticResource TextDim}"/>
+        </Grid>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <TextBlock Text="{Binding AppStatus}" Foreground="{StaticResource TextDim}" FontSize="12"
+                     VerticalAlignment="Center" Margin="0,0,16,0"/>
+          <Border Background="#FF241A10" BorderBrush="{StaticResource Amber}" BorderThickness="1"
+                  CornerRadius="3" Padding="8,3">
+            <TextBlock Text="ADMIN" FontSize="10" FontWeight="Bold" Foreground="{StaticResource Amber}"/>
+          </Border>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Caption buttons (custom-drawn; DWM buttons are gone with CaptionHeight=0) -->
+    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right"
+                VerticalAlignment="Top" Height="32">
+      <Button Click="MinimizeClick" Width="46" Height="32" Padding="0" BorderThickness="0"
+              Background="Transparent" FontFamily="Segoe MDL2 Assets" FontSize="10" Content="&#xE921;"
+              Cursor="Arrow">
+        <Button.Template>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#FF26333D"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Button.Template>
+      </Button>
+      <Button Click="MaximizeClick" Width="46" Height="32" Padding="0" BorderThickness="0"
+              Background="Transparent" FontFamily="Segoe MDL2 Assets" FontSize="10" Cursor="Arrow">
+        <Button.Template>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#FF26333D"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Button.Template>
+        <TextBlock x:Name="MaximizeGlyph" Text="&#xE922;"/>
+      </Button>
+      <Button Click="CloseClick" Width="46" Height="32" Padding="0" BorderThickness="0"
+              Background="Transparent" FontFamily="Segoe MDL2 Assets" FontSize="10" Content="&#xE8BB;"
+              Cursor="Arrow">
+        <Button.Template>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#FFE81123"/>
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Button.Template>
+      </Button>
+    </StackPanel>
+
+    <!-- Tabs -->
+    <TabControl Grid.Row="1">
+      <TabItem Header="DEVICES">
+        <views:DevicesView DataContext="{Binding Devices}"/>
+      </TabItem>
+      <TabItem Header="CORE RADAR">
+        <views:CoreRadarView DataContext="{Binding Radar}"/>
+      </TabItem>
+      <TabItem Header="PROFILES">
+        <views:ProfilesView DataContext="{Binding Profiles}"/>
+      </TabItem>
+    </TabControl>
+
+    <!-- Confirmation overlay -->
+    <Grid x:Name="DialogOverlay" Grid.RowSpan="2" Visibility="Collapsed"
+          Background="#B005070A">
+      <Border Width="460" VerticalAlignment="Center" HorizontalAlignment="Center"
+              Background="{StaticResource Panel}" BorderBrush="{StaticResource Accent}"
+              BorderThickness="1" CornerRadius="6" Padding="24">
+        <StackPanel>
+          <TextBlock x:Name="DialogTitle" FontSize="17" FontWeight="Bold" Margin="0,0,0,10"/>
+          <TextBlock x:Name="DialogMessage" FontSize="13" Foreground="{StaticResource TextBrush}"
+                     TextWrapping="Wrap" Margin="0,0,0,20"/>
+          <StackPanel x:Name="DialogButtons" Orientation="Horizontal" HorizontalAlignment="Right"/>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

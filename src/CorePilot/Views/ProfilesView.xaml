@@ -1,0 +1,120 @@
+<UserControl x:Class="CorePilot.Views.ProfilesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:CorePilot.Converters">
+  <UserControl.Resources>
+    <conv:BoolToVisibilityConverter x:Key="BoolVis"/>
+  </UserControl.Resources>
+
+  <Grid Margin="24,16">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="370"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+
+    <!-- Left: save + list -->
+    <Border Grid.Column="0" Style="{StaticResource PanelBorder}" Margin="0,0,12,0">
+      <StackPanel>
+        <TextBlock Style="{StaticResource SectionHeader}" Text="SAVE CURRENT AS PROFILE"/>
+        <TextBox Text="{Binding NewProfileName, UpdateSourceTrigger=PropertyChanged}"
+                 Margin="0,0,0,8">
+          <TextBox.ToolTip>Profile name</TextBox.ToolTip>
+        </TextBox>
+        <Button Content="SAVE PROFILE" Style="{StaticResource AccentButton}"
+                Command="{Binding SaveCurrentCommand}" HorizontalAlignment="Stretch"/>
+
+        <TextBlock Style="{StaticResource SectionHeader}" Text="SAVED PROFILES" Margin="0,22,0,8"/>
+        <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"
+                 MaxHeight="420">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding}" FontSize="13" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextBrush}"/>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+          <Button Content="REVIEW" Command="{Binding LoadForDiffCommand}" MinWidth="110"/>
+          <Button Content="DELETE" Command="{Binding DeleteProfileCommand}" MinWidth="90" Margin="8,0,0,0"/>
+        </StackPanel>
+        <TextBlock Text="{Binding Status}" FontSize="11" Foreground="{StaticResource TextDim}"
+                   TextWrapping="Wrap" Margin="0,12,0,0"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Right: diff view -->
+    <Border Grid.Column="1" Style="{StaticResource PanelBorder}">
+      <Grid>
+        <TextBlock Text="Select a profile and click REVIEW to see what it would change"
+                   Foreground="{StaticResource TextDim}" FontSize="14"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Visibility="{Binding HasDiff, Converter={StaticResource BoolVis}, FallbackValue=Visible}">
+          <TextBlock.Style>
+            <Style TargetType="TextBlock">
+              <Setter Property="Visibility" Value="Collapsed"/>
+              <Style.Triggers>
+                <DataTrigger Binding="{Binding HasDiff}" Value="False">
+                  <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+              </Style.Triggers>
+            </Style>
+          </TextBlock.Style>
+        </TextBlock>
+
+        <Grid Visibility="{Binding HasDiff, Converter={StaticResource BoolVis}}">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+
+          <Grid Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="30"/>
+              <ColumnDefinition Width="2*"/>
+              <ColumnDefinition Width="2*"/>
+              <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="1" Text="DEVICE" FontSize="10" Foreground="{StaticResource TextDim}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="2" Text="CURRENT" FontSize="10" Foreground="{StaticResource TextDim}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="3" Text="FROM PROFILE" FontSize="10" Foreground="{StaticResource TextDim}" FontWeight="SemiBold"/>
+          </Grid>
+
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding DiffRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,6">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="30"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="2*"/>
+                      </Grid.ColumnDefinitions>
+                      <CheckBox IsChecked="{Binding Include}" IsEnabled="{Binding DevicePresent}"
+                                VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1" Text="{Binding DeviceName}" FontSize="12"
+                                 Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"
+                                 VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="2" Text="{Binding CurrentSummary}" FontSize="11"
+                                 FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextDim}"
+                                 TextWrapping="Wrap" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="3" Text="{Binding NewSummary}" FontSize="11"
+                                 FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource Cyan}"
+                                 TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <Button Grid.Row="2" Content="APPLY PROFILE TO CHECKED DEVICES"
+                  Style="{StaticResource AccentButton}" Command="{Binding ApplyCommand}"
+                  HorizontalAlignment="Right" Margin="0,12,0,0" MinWidth="260"/>
+        </Grid>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

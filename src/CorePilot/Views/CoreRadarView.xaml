@@ -1,0 +1,258 @@
+<UserControl x:Class="CorePilot.Views.CoreRadarView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:CorePilot.ViewModels"
+             xmlns:controls="clr-namespace:CorePilot.Controls"
+             xmlns:conv="clr-namespace:CorePilot.Converters">
+  <UserControl.Resources>
+    <conv:LoadToBrushConverter x:Key="LoadBrush"/>
+    <conv:BoolToVisibilityConverter x:Key="BoolVis"/>
+    <conv:InverseBoolToVisibilityConverter x:Key="InvBoolVis"/>
+  </UserControl.Resources>
+
+  <Grid Margin="24,16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="220"/>
+    </Grid.RowDefinitions>
+
+    <!-- Top: heatmap + control deck -->
+    <Grid Grid.Row="0" Margin="0,0,0,14">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="330"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- Heatmap -->
+      <Border Grid.Column="0" Style="{StaticResource PanelBorder}" Margin="0,0,12,0">
+        <StackPanel>
+          <Grid Margin="0,0,0,6">
+            <TextBlock Style="{StaticResource SectionHeader}" Text="PER-CORE INTERRUPT LOAD"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+              <Border Width="10" Height="10" CornerRadius="2">
+                <Border.Background><SolidColorBrush Color="#2C6E33"/></Border.Background>
+              </Border>
+              <TextBlock Text="idle" FontSize="10" Foreground="{StaticResource TextDim}" Margin="4,0,10,0"/>
+              <Border Width="10" Height="10" CornerRadius="2">
+                <Border.Background><SolidColorBrush Color="#8F3A3A"/></Border.Background>
+              </Border>
+              <TextBlock Text="hot" FontSize="10" Foreground="{StaticResource TextDim}" Margin="4,0,0,0"/>
+            </StackPanel>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Cores}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <UniformGrid Columns="12"/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type vm:CoreViewModel}">
+                <Border Margin="2.5" MinHeight="52" CornerRadius="4" BorderThickness="1.5"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        Background="{Binding LoadScore, Converter={StaticResource LoadBrush}}">
+                  <Border.Style>
+                    <Style TargetType="Border">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsRecommended}" Value="True">
+                          <Setter Property="BorderBrush" Value="{StaticResource Cyan}"/>
+                          <Setter Property="Effect">
+                            <Setter.Value>
+                              <DropShadowEffect Color="{StaticResource CyanColor}" BlurRadius="14"
+                                                ShadowDepth="0" Opacity="0.9"/>
+                            </Setter.Value>
+                          </Setter>
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Border.Style>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Label}" HorizontalAlignment="Center"
+                               FontSize="15" FontWeight="Bold" Foreground="#FFEAF6EE"/>
+                    <TextBlock HorizontalAlignment="Center" FontSize="9" Foreground="#BFEAF6EE">
+                      <TextBlock.Text>
+                        <MultiBinding StringFormat="{}{0:0.#}% irq">
+                          <Binding Path="InterruptTimePercent"/>
+                        </MultiBinding>
+                      </TextBlock.Text>
+                    </TextBlock>
+                    <TextBlock HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource Amber}"
+                               Visibility="{Binding HasEtwData, Converter={StaticResource BoolVis}}">
+                      <TextBlock.Text>
+                        <MultiBinding StringFormat="{}max {0:0}µs">
+                          <Binding Path="MaxDpcMicroseconds"/>
+                        </MultiBinding>
+                      </TextBlock.Text>
+                    </TextBlock>
+                  </StackPanel>
+                  <Border.ToolTip>
+                    <StackPanel>
+                      <TextBlock FontWeight="Bold"><Run Text="Core "/><Run Text="{Binding Label, Mode=OneWay}"/></TextBlock>
+                      <TextBlock><Run Text="Interrupt: "/><Run Text="{Binding InterruptTimePercent, Mode=OneWay, StringFormat=0.00}"/><Run Text="%"/></TextBlock>
+                      <TextBlock><Run Text="DPC: "/><Run Text="{Binding DpcTimePercent, Mode=OneWay, StringFormat=0.00}"/><Run Text="%"/></TextBlock>
+                      <TextBlock><Run Text="Interrupts/s: "/><Run Text="{Binding InterruptsPerSec, Mode=OneWay, StringFormat=0}"/></TextBlock>
+                      <TextBlock><Run Text="DPCs queued/s: "/><Run Text="{Binding DpcsQueuedPerSec, Mode=OneWay, StringFormat=0}"/></TextBlock>
+                    </StackPanel>
+                  </Border.ToolTip>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <!-- Control deck -->
+      <Border Grid.Column="1" Style="{StaticResource PanelBorder}">
+        <StackPanel>
+          <TextBlock Style="{StaticResource SectionHeader}" Text="RADAR CONTROLS"/>
+          <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="{StaticResource TextDim}"
+                     TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+          <Grid Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="ETW latency mode" FontSize="13" VerticalAlignment="Center"/>
+            <ToggleButton IsChecked="{Binding EtwEnabled}" VerticalAlignment="Center" Cursor="Hand">
+              <ToggleButton.Template>
+                <ControlTemplate TargetType="ToggleButton">
+                  <Border x:Name="bd" Width="44" Height="22" CornerRadius="11"
+                          Background="{StaticResource PanelAlt}" BorderBrush="{StaticResource BorderBrush}"
+                          BorderThickness="1" Padding="3">
+                    <Ellipse x:Name="knob" Width="14" Height="14" Fill="{StaticResource TextDim}"
+                             HorizontalAlignment="Left"/>
+                  </Border>
+                  <ControlTemplate.Triggers>
+                    <Trigger Property="IsChecked" Value="True">
+                      <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentDim}"/>
+                      <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                      <Setter TargetName="knob" Property="Fill" Value="{StaticResource Accent}"/>
+                      <Setter TargetName="knob" Property="HorizontalAlignment" Value="Right"/>
+                    </Trigger>
+                  </ControlTemplate.Triggers>
+                </ControlTemplate>
+              </ToggleButton.Template>
+            </ToggleButton>
+          </Grid>
+          <TextBlock Text="{Binding EtwStatus}" FontSize="11" Foreground="{StaticResource TextDim}"
+                     TextWrapping="Wrap" Margin="0,0,14,0"/>
+
+          <Separator Background="{StaticResource BorderBrush}" Margin="0,0,0,12"/>
+
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <CheckBox Content="Exclude core 0" IsChecked="{Binding ExcludeCoreZero}"
+                      VerticalAlignment="Center" Margin="0,0,14,0"/>
+            <TextBlock Text="Count:" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBox Text="{Binding RecommendedCount, UpdateSourceTrigger=PropertyChanged}"
+                     Width="44" Padding="4,2" HorizontalContentAlignment="Center"/>
+          </StackPanel>
+
+          <Button Content="RECOMMEND LEAST-USED CORES" Command="{Binding RecommendLeastUsedCommand}"
+                  Style="{StaticResource AccentButton}" HorizontalAlignment="Stretch"/>
+          <Button Content="ASSIGN TO SELECTED DEVICE" Command="{Binding AssignRecommendedToDeviceCommand}"
+                  HorizontalAlignment="Stretch" Margin="0,8,0,0"/>
+          <TextBlock Text="{Binding RecommendationText}" FontSize="11" Foreground="{StaticResource Cyan}"
+                     TextWrapping="Wrap" Margin="0,10,0,0"/>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Middle: 4 metric charts -->
+    <Grid Grid.Row="1" Margin="0,0,0,14">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+
+      <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource PanelBorder}" Margin="0,0,6,6">
+        <controls:MetricChart Series="{Binding Metrics[0].Series}" Title="% Interrupt Time" Unit="%"/>
+      </Border>
+      <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource PanelBorder}" Margin="6,0,0,6">
+        <controls:MetricChart Series="{Binding Metrics[1].Series}" Title="% DPC Time" Unit="%"/>
+      </Border>
+      <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource PanelBorder}" Margin="0,6,6,0">
+        <controls:MetricChart Series="{Binding Metrics[2].Series}" Title="Interrupts/sec" Unit="/s"/>
+      </Border>
+      <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource PanelBorder}" Margin="6,6,0,0">
+        <controls:MetricChart Series="{Binding Metrics[3].Series}" Title="DPCs Queued/sec" Unit="/s"/>
+      </Border>
+    </Grid>
+
+    <!-- Bottom: top offending drivers (ETW) -->
+    <Border Grid.Row="2" Style="{StaticResource PanelBorder}">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <TextBlock Style="{StaticResource SectionHeader}" Text="TOP DPC / ISR EXECUTION TIMES (ETW WINDOW)"/>
+        <Grid Visibility="{Binding EtwEnabled, Converter={StaticResource BoolVis}}" Grid.Row="1">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid Margin="0,0,0,4">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="DRIVER" FontSize="10" Foreground="{StaticResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="1" Text="MAX DPC µs" FontSize="10" Foreground="{StaticResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="2" Text="MAX ISR µs" FontSize="10" Foreground="{StaticResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="3" Text="TOTAL µs" FontSize="10" Foreground="{StaticResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="4" Text="COUNT" FontSize="10" Foreground="{StaticResource TextDim}" FontWeight="SemiBold"/>
+            </Grid>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding TopDrivers}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,5">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="2*"/>
+                          <ColumnDefinition Width="*"/>
+                          <ColumnDefinition Width="*"/>
+                          <ColumnDefinition Width="*"/>
+                          <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding DriverName}" FontFamily="{StaticResource MonoFont}"
+                                   FontSize="12" Foreground="{StaticResource TextBrush}"/>
+                        <TextBlock Grid.Column="1" Text="{Binding MaxDpcMicroseconds, StringFormat=0.#}"
+                                   FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource Amber}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding MaxIsrMicroseconds, StringFormat=0.#}"
+                                   FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource TextBrush}"/>
+                        <TextBlock Grid.Column="3" FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                   Foreground="{StaticResource TextDim}">
+                          <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0:0}">
+                              <Binding Path="TotalDpcMicroseconds"/>
+                            </MultiBinding>
+                          </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Grid.Column="4" Text="{Binding ExecutionCount}"
+                                   FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{StaticResource TextDim}"/>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+        </Grid>
+        <TextBlock Grid.Row="1" Text="Enable ETW latency mode to capture 10-second DPC/ISR windows and rank drivers by execution time — like LatencyMon."
+                   Foreground="{StaticResource TextDim}" FontSize="13" TextWrapping="Wrap"
+                   VerticalAlignment="Center" HorizontalAlignment="Center"
+                   Visibility="{Binding EtwEnabled, Converter={StaticResource InvBoolVis}}"/>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>
