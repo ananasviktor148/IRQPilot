@@ -101,16 +101,49 @@ Backups live in `%ProgramData%\CorePilot\Backups\<device>.json`, profiles in
   Unrelated registry data is never touched.
 - Restore needs a device restart (or reboot) to take effect, just like applying.
 
-## Build & run
+## Install and run
+
+IRQPilot is a portable WPF application; no system-wide installer is required. It supports
+Windows 10 21H2+ / Windows 11 x64 and must run as Administrator.
+
+### Option 1: Build and run from source
+
+1. Install the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) and
+   [Git for Windows](https://git-scm.com/download/win).
+2. Open PowerShell and run:
 
 ```powershell
-dotnet restore
-dotnet build
-dotnet test          # mask codec + policy mapping unit tests
+git clone https://github.com/ananasviktor148/IRQPilot.git
+cd IRQPilot
+dotnet build .\src\CorePilot\CorePilot.csproj -c Release
+dotnet test .\tests\CorePilot.Tests\CorePilot.Tests.csproj -c Release
 ```
 
-Run `src\CorePilot\bin\Debug\net8.0-windows\IRQPilot.exe` **as Administrator**
-(the manifest will trigger UAC anyway).
+3. Start the app:
+
+```powershell
+.\src\CorePilot\bin\Release\net8.0-windows\IRQPilot.exe
+```
+
+4. Approve the UAC prompt. The manifest requests Administrator rights because IRQPilot
+   writes device settings under HKLM and can restart devices.
+
+### Option 2: Create a portable build
+
+Run this on a machine with the .NET 8 SDK installed:
+
+```powershell
+dotnet publish .\src\CorePilot\CorePilot.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  -o .\publish\IRQPilot
+```
+
+Copy the **entire** `publish\IRQPilot` folder to any location or another x64 Windows
+machine, then run `IRQPilot.exe` inside it and approve the UAC prompt. The published
+copy includes the .NET runtime, so .NET does not need to be installed on the target
+machine. Do not move the executable away from its accompanying files.
 
 ## Dependencies
 
