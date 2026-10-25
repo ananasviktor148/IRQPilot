@@ -30,15 +30,17 @@ public partial class App : Application
         var registry = new AffinityRegistryService();
         var backup = new BackupService();
         var restart = new DeviceRestartService();
+        var processAffinity = new ProcessAffinityService();
 
         var window = new MainWindow();
         var dialogs = window.Dialogs;
 
         var radar = new CoreRadarViewModel(topology, _monitor, _etw);
         var devices = new DevicesViewModel(enumeration, registry, backup, restart, radar, dialogs);
+        var processes = new ProcessesViewModel(processAffinity, radar);
         var profiles = new ProfilesViewModel(backup, registry, devices, dialogs);
 
-        window.DataContext = new MainViewModel(radar, devices, profiles, _monitor, _etw);
+        window.DataContext = new MainViewModel(radar, devices, processes, profiles, _monitor, _etw);
         window.Closed += (_, _) =>
         {
             radar.Stop();

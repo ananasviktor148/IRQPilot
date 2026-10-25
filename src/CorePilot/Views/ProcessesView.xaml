@@ -1,0 +1,225 @@
+<UserControl x:Class="CorePilot.Views.ProcessesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:CorePilot.ViewModels"
+             xmlns:conv="clr-namespace:CorePilot.Converters">
+  <UserControl.Resources>
+    <conv:LoadToBrushConverter x:Key="LoadBrush"/>
+    <conv:BoolToVisibilityConverter x:Key="BoolVis"/>
+    <conv:InverseBoolToVisibilityConverter x:Key="InvBoolVis"/>
+  </UserControl.Resources>
+
+  <Grid Margin="24,16">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="370"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+
+    <!-- Process list -->
+    <Border Grid.Column="0" Style="{StaticResource PanelBorder}" Margin="0,0,12,0">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Style="{StaticResource SectionHeader}" Text="RUNNING PROCESSES"/>
+        <TextBox Grid.Row="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                 Margin="0,0,0,10">
+          <TextBox.ToolTip>Filter by process name or PID</TextBox.ToolTip>
+        </TextBox>
+
+        <ListBox Grid.Row="2" ItemsSource="{Binding FilteredProcesses}"
+                 SelectedItem="{Binding SelectedProcess}">
+          <ListBox.ItemTemplate>
+            <DataTemplate DataType="{x:Type vm:ProcessViewModel}">
+              <Grid Width="290">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                  <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
+                             Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+                  <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                    <TextBlock Text="{Binding Pid, StringFormat=PID {0}}" FontSize="11"
+                               FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextDim}"/>
+                    <TextBlock Text="  MULTI-GROUP" FontSize="11" FontWeight="Bold"
+                               Foreground="{StaticResource Amber}"
+                               Visibility="{Binding SpansMultipleGroups, Converter={StaticResource BoolVis}}"/>
+                  </StackPanel>
+                </StackPanel>
+                <Border Grid.Column="1" VerticalAlignment="Center" Padding="7,2" CornerRadius="3"
+                        Background="{StaticResource PanelAlt}" BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1">
+                  <TextBlock Text="{Binding CoreSummary}" FontSize="10">
+                    <TextBlock.Style>
+                      <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource TextDim}"/>
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding CanQuery}" Value="False">
+                            <Setter Property="Foreground" Value="{StaticResource Amber}"/>
+                          </DataTrigger>
+                          <DataTrigger Binding="{Binding CanSet}" Value="False">
+                            <Setter Property="Foreground" Value="{StaticResource Amber}"/>
+                          </DataTrigger>
+                          <DataTrigger Binding="{Binding SpansMultipleGroups}" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource Amber}"/>
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </TextBlock.Style>
+                  </TextBlock>
+                </Border>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBlock Grid.Row="3" Text="{Binding ListStatus}" FontSize="11"
+                   Foreground="{StaticResource TextDim}" TextWrapping="Wrap" Margin="0,8,0,8"/>
+
+        <Button Grid.Row="4" Content="REFRESH" Command="{Binding RefreshProcessesCommand}"/>
+      </Grid>
+    </Border>
+
+    <!-- Detail pane -->
+    <Border Grid.Column="1" Style="{StaticResource PanelBorder}">
+      <Grid>
+        <TextBlock Text="Select a running process to set its CPU affinity"
+                   Foreground="{StaticResource TextDim}" FontSize="14"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Visibility="{Binding HasSelectedProcess, Converter={StaticResource InvBoolVis}}"/>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding HasSelectedProcess, Converter={StaticResource BoolVis}}">
+          <StackPanel>
+            <TextBlock Text="{Binding SelectedProcess.DisplayName}" FontSize="20" FontWeight="Bold"/>
+            <StackPanel Orientation="Horizontal" Margin="0,2,0,14">
+              <TextBlock Text="{Binding SelectedProcess.Pid, StringFormat=PID {0}}" FontSize="11"
+                         FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextDim}"/>
+              <TextBlock Text="{Binding SelectedProcess.ProcessorGroupText}" FontSize="11"
+                         Foreground="{StaticResource TextDim}" Margin="14,0,0,0"/>
+            </StackPanel>
+
+            <Border Background="{StaticResource PanelAlt}" BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="12">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                  <TextBlock Style="{StaticResource SectionHeader}" Text="CURRENT AFFINITY"/>
+                  <TextBlock Text="{Binding SelectedProcess.CurrentAffinityText}" FontSize="13"
+                             FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextBrush}"
+                             TextWrapping="Wrap"/>
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding SelectedProcess.CoreGroupSummary}" FontSize="11"
+                           Foreground="{StaticResource TextDim}" VerticalAlignment="Bottom"
+                           Margin="16,0,0,0"/>
+              </Grid>
+            </Border>
+
+            <Border Background="#FF241A10" BorderBrush="{StaticResource Amber}" BorderThickness="1"
+                    CornerRadius="4" Padding="10" Margin="0,12,0,0"
+                    Visibility="{Binding SelectedProcess.HasWarning, Converter={StaticResource BoolVis}}">
+              <TextBlock Text="{Binding SelectedProcess.WarningText}" Foreground="{StaticResource Amber}"
+                         FontSize="12" TextWrapping="Wrap"/>
+            </Border>
+
+            <StackPanel Visibility="{Binding HasEditableProcess, Converter={StaticResource BoolVis}}">
+              <Grid Margin="0,16,0,6">
+                <TextBlock Style="{StaticResource SectionHeader}"
+                           Text="CPU CORES  —  tile color = live interrupt load, outline = selected"/>
+                <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,0,4"
+                           Text="{Binding SelectionText}" FontSize="11" Foreground="{StaticResource Accent}"/>
+              </Grid>
+
+              <Border Background="{StaticResource PanelAlt}" BorderBrush="{StaticResource BorderBrush}"
+                      BorderThickness="1" CornerRadius="4" Padding="10">
+                <ItemsControl ItemsSource="{Binding ProcessCores}" IsEnabled="{Binding CanEditSelected}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <UniformGrid Columns="8"/>
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:CoreViewModel}">
+                      <ToggleButton IsChecked="{Binding IsProcessSelected}" Margin="3" MinHeight="48"
+                                    Cursor="Hand">
+                        <ToggleButton.Template>
+                          <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="bd" CornerRadius="4" BorderThickness="1.5"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    Background="{Binding LoadScore, Converter={StaticResource LoadBrush}}">
+                              <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Label}" HorizontalAlignment="Center"
+                                           FontSize="14" FontWeight="Bold" Foreground="#FFEAF6EE"/>
+                                <TextBlock HorizontalAlignment="Center" FontSize="9.5" Foreground="#BFEAF6EE">
+                                  <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0:0.#}% IRQ">
+                                      <Binding Path="InterruptTimePercent"/>
+                                    </MultiBinding>
+                                  </TextBlock.Text>
+                                </TextBlock>
+                              </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                              <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                <Setter TargetName="bd" Property="Effect">
+                                  <Setter.Value>
+                                    <DropShadowEffect Color="{StaticResource AccentColor}" BlurRadius="12"
+                                                      ShadowDepth="0" Opacity="0.8"/>
+                                  </Setter.Value>
+                                </Setter>
+                              </Trigger>
+                              <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource TextBrush}"/>
+                              </Trigger>
+                              <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55"/>
+                              </Trigger>
+                            </ControlTemplate.Triggers>
+                          </ControlTemplate>
+                        </ToggleButton.Template>
+                        <ToggleButton.ToolTip>
+                          <StackPanel>
+                            <TextBlock FontWeight="Bold"><Run Text="Core "/><Run Text="{Binding Label, Mode=OneWay}"/></TextBlock>
+                            <TextBlock><Run Text="Interrupt: "/><Run Text="{Binding InterruptTimePercent, Mode=OneWay, StringFormat=0.00}"/><Run Text="%"/></TextBlock>
+                            <TextBlock><Run Text="DPC: "/><Run Text="{Binding DpcTimePercent, Mode=OneWay, StringFormat=0.00}"/><Run Text="%"/></TextBlock>
+                          </StackPanel>
+                        </ToggleButton.ToolTip>
+                      </ToggleButton>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Border>
+
+              <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                <Button Content="APPLY AFFINITY" Style="{StaticResource AccentButton}"
+                        Command="{Binding ApplyAffinityCommand}" IsEnabled="{Binding CanApplySelection}"
+                        MinWidth="150"/>
+                <Button Content="SELECT ALL CORES" Command="{Binding SelectAllCoresCommand}"
+                        IsEnabled="{Binding CanEditSelected}" Margin="10,0,0,0" MinWidth="150"/>
+                <Button Content="CLEAR" Command="{Binding ClearCoreSelectionCommand}"
+                        IsEnabled="{Binding CanEditSelected}" Margin="10,0,0,0" MinWidth="80"/>
+              </StackPanel>
+
+              <TextBlock Foreground="{StaticResource TextDim}" FontSize="11" TextWrapping="Wrap"
+                         Margin="0,10,0,0"
+                         Text="Affinity is applied to all threads immediately and resets when the process exits — no restart required."/>
+            </StackPanel>
+
+            <TextBlock Text="{Binding DetailStatus}" Foreground="{StaticResource Amber}"
+                       FontSize="12" Margin="0,12,0,0" TextWrapping="Wrap"/>
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

@@ -28,6 +28,9 @@ public sealed partial class CoreViewModel : ObservableObject
     /// <summary>Checked in the device affinity selector.</summary>
     [ObservableProperty] private bool _isSelected;
 
+    /// <summary>Checked in the process affinity selector (kept separate from device selection).</summary>
+    [ObservableProperty] private bool _isProcessSelected;
+
     public double LoadScore => InterruptTimePercent + DpcTimePercent;
 
     public CoreViewModel(int globalIndex, ushort group, int indexInGroup, bool multipleGroups)

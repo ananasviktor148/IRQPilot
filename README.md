@@ -3,6 +3,7 @@
 A Windows desktop tool for managing **CPU interrupt affinity** — a modern, simpler take on
 Microsoft's Interrupt Affinity Policy Tool, with a built-in LatencyMon-style **Core Radar**
 that shows which cores are least loaded by interrupts so you can pin devices to the quiet ones.
+It can also pin running processes to a chosen set of cores.
 
 Windows 10 21H2+ / Windows 11, x64 · .NET 8 · WPF (MVVM, CommunityToolkit.Mvvm) · **no kernel drivers**.
 
@@ -38,6 +39,19 @@ Windows 10 21H2+ / Windows 11, x64 · .NET 8 · WPF (MVVM, CommunityToolkit.Mvvm
   last 60 s (core 0 excluded by default), highlights them in the grid, and can assign
   them to the currently selected device in one click.
 
+### Processes tab
+- Enumerates running processes (name, PID) with a search box filtering by either.
+- Shows each process's current CPU affinity as a core count and mask ranges
+  (e.g. `0-3, 8`). The core grid starts unselected, so it uses the same neutral tile
+  theme as the Devices tab — pick cores individually or use **Select all cores**.
+- Select any set of cores, then apply, clear, or select all in one click. Per-process
+  affinity takes effect immediately for every thread — no device restart and no registry
+  writes.
+- **Protected** processes (where Windows refuses `PROCESS_SET_INFORMATION`) are shown
+  read-only with a warning instead of an editor. The same applies to processes spanning
+  multiple processor groups, because the Win32 affinity mask covers one group at a time.
+- Process affinity is ephemeral: it is not saved by IRQPilot and resets when the process exits.
+
 ### Profiles tab
 - Save the current device → {policy, mask} mappings as named JSON profiles.
 - Loading a profile shows a **diff** (current vs. new per device) with checkboxes;
@@ -72,6 +86,8 @@ all three documented forms plus this record form.
 - `HKLM\SYSTEM\CurrentControlSet\Enum\...` is only writable by administrators/SYSTEM.
 - Disabling/re-enabling devices (CfgMgr32) requires elevation.
 - The NT Kernel Logger ETW session requires the `SeSystemProfilePrivilege`, held by admins.
+- Changing another user's process affinity requires elevation. Some protected processes
+  stay read-only even for administrators.
 
 The manifest declares `requireAdministrator`. If the app is somehow started without
 elevation, it shows a clear message and exits instead of failing halfway.
@@ -158,8 +174,10 @@ machine. Do not move the executable away from its accompanying files.
   Explorer is tracing, ETW mode tells you to close it.
 - If Windows performance counters are corrupted (`lodctr /R` fixes), Core Radar reports
   the problem instead of crashing.
-- Process-affinity pinning (a fourth tab) was intentionally left out of this build —
-  the registry policy path above is the correct mechanism for interrupt latency work.
+- Process affinity is applied at runtime and resets when the process exits. It is not a
+  persistence mechanism; use interrupt affinity (Devices tab) for lasting latency tuning.
+- Protected processes and processes spanning multiple processor groups are read-only in
+  the Processes tab. The classic affinity APIs cannot change them safely.
 - Devices whose written setting hasn't been activated yet show **Pending restart**.
 
 ## License
@@ -174,5 +192,10 @@ IRQPilot is available under the [MIT License](LICENSE).
   https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ne-wdm-_irq_device_policy
 - CM_Disable_DevNode / CM_Enable_DevNode:
   https://learn.microsoft.com/en-us/windows/win32/api/cfgmgr32/nf-cfgmgr32-cm_disable_devnode
+- GetProcessAffinityMask / SetProcessAffinityMask:
+  https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getprocessaffinitymask
+  and https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setprocessaffinitymask
+- GetProcessGroupAffinity (processor groups):
+  https://learn.microsoft.com/en-us/windows/win32/api/processtopologyapi/nf-processtopologyapi-getprocessgroupaffinity
 - TraceProcessor (Microsoft.Windows.EventTracing):
   https://learn.microsoft.com/en-us/windows/apps/trace-processing/overview

@@ -50,6 +50,37 @@ internal static partial class NativeMethods
     [LibraryImport("kernel32.dll")]
     internal static partial uint GetActiveProcessorCount(ushort groupNumber);
 
+    // ---- Kernel32 (process affinity) ----
+
+    internal const uint PROCESS_SET_INFORMATION = 0x0200;
+    internal const uint PROCESS_QUERY_INFORMATION = 0x0400;
+    internal const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
+    internal const int ERROR_INSUFFICIENT_BUFFER = 122;
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    internal static partial IntPtr OpenProcess(
+        uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, int processId);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool CloseHandle(IntPtr handle);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetProcessAffinityMask(
+        IntPtr process, out nuint processAffinityMask, out nuint systemAffinityMask);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool SetProcessAffinityMask(IntPtr process, nuint processAffinityMask);
+
+    // GroupCount is in/out and points at the GroupArray length; 64 covers Windows' max group count.
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetProcessGroupAffinity(
+        IntPtr process, ref ushort groupCount, [Out] ushort[] groupArray);
+
     // ---- DwmApi (dark window chrome) ----
 
     // DWMWA_USE_IMMERSIVE_DARK_MODE: 20 on Win10 20H1+ / Win11, 19 on older Win10.

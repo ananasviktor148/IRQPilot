@@ -7,6 +7,7 @@ public sealed partial class MainViewModel : ObservableObject
 {
     public CoreRadarViewModel Radar { get; }
     public DevicesViewModel Devices { get; }
+    public ProcessesViewModel Processes { get; }
     public ProfilesViewModel Profiles { get; }
 
     [ObservableProperty] private string _appStatus = "Ready";
@@ -14,12 +15,14 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(
         CoreRadarViewModel radar,
         DevicesViewModel devices,
+        ProcessesViewModel processes,
         ProfilesViewModel profiles,
         PerformanceMonitorService monitor,
         EtwLatencyService etw)
     {
         Radar = radar;
         Devices = devices;
+        Processes = processes;
         Profiles = profiles;
 
         radar.AssignRecommendedRequested += cores =>
@@ -30,6 +33,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         radar.Start();
         _ = devices.LoadAsync();
+        _ = processes.LoadAsync();
         profiles.RefreshList();
     }
 }

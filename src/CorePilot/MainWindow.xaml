@@ -117,6 +117,9 @@
       <TabItem Header="DEVICES">
         <views:DevicesView DataContext="{Binding Devices}"/>
       </TabItem>
+      <TabItem Header="PROCESSES">
+        <views:ProcessesView DataContext="{Binding Processes}"/>
+      </TabItem>
       <TabItem Header="CORE RADAR">
         <views:CoreRadarView DataContext="{Binding Radar}"/>
       </TabItem>
